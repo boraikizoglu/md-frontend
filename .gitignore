@@ -59,3 +59,15 @@ typings/
 
 # next.js build output
 .next
+
+# OS files
+.DS_Store
+
+# Typescript dist file
+dist
+
+# testing
+/coverage
+
+# production
+/build
