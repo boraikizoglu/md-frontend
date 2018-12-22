@@ -8,10 +8,12 @@
     "react": "^16.7.0",
     "react-csv-reader": "^1.1.0",
     "react-dom": "^16.7.0",
-    "react-scripts-ts": "3.1.0"
+    "react-scripts-ts": "3.1.0",
+    "serve": "^10.1.1"
   },
   "scripts": {
-    "start": "react-scripts-ts start",
+    "dev": "react-scripts-ts start",
+    "start": "serve -s build",
     "build": "react-scripts-ts build",
     "test": "react-scripts-ts test --env=jsdom",
     "eject": "react-scripts-ts eject"
