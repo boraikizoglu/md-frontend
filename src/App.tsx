@@ -1,7 +1,7 @@
 import * as React from 'react';
 import NS from './NetworkSingleton';
 import {
-  Upload, message, Button, Icon, Select,
+  Upload, message, Button, Icon, Select, Table,
 } from 'antd';
 
 import './App.css';
@@ -21,13 +21,16 @@ interface IState {
   stocksList: IStockList;
   selectedStockID1: number;
   selectedStockID2: number;
-  stock1SelectionOptions: any;
-  stock2SelectionOptions: any;
+  stock1SelectionOptions: IStockList;
+  stock2SelectionOptions: IStockList;
   stdev1: number;
   stdev2: number;
   corr: number;
   loading: boolean;
+  stockTable1Data: any;
+  stockTable2Data: any;
   showStatistics: boolean;
+  showTable: boolean;
 }
 
 const Option = Select.Option;
@@ -46,6 +49,9 @@ class App extends React.Component<{}, IState> {
       corr: null,
       loading: false,
       showStatistics: false,
+      stockTable1Data: null,
+      stockTable2Data: null,
+      showTable: false,
     };
   }
 
@@ -96,7 +102,7 @@ class App extends React.Component<{}, IState> {
     });
   }
 
-  public onClickCalculate(){
+  public updateStatistics(){
     const { selectedStockID1, selectedStockID2, stock1SelectionOptions, stock2SelectionOptions } = this.state;
     if(selectedStockID1 === null || selectedStockID2 === null){
       message.error(`You need to select the datasets that will be compared`);
@@ -117,19 +123,81 @@ class App extends React.Component<{}, IState> {
     });
   }
 
+  public updateTable(){
+    const { selectedStockID1, selectedStockID2, stocksList } = this.state;
+    if(!selectedStockID1 || !selectedStockID2 || !stocksList){
+      return null;
+    }
+    NS.stock(stocksList[`${selectedStockID1}`].stocksymbol, selectedStockID1, (res) => {
+      NS.stock(stocksList[`${selectedStockID2}`].stocksymbol, selectedStockID2, (res2) => {
+        this.setState({stockTable1Data: res, stockTable2Data: res2, showTable: true});
+      }, (err) => {
+        console.log(err);
+      });
+    }, (err) => {
+      console.log(err);
+    });
+  }
+
+  public onClickCalculate(){
+    this.updateStatistics();
+    this.updateTable();
+  }
+
   public returnStatistics(){
-    const { selectedStockID1, selectedStockID2, stdev1, stdev2, corr, stocksList } = this.state;
+    const { selectedStockID1, selectedStockID2, stdev1, stdev2, corr, stocksList, showStatistics } = this.state;
+    if(!showStatistics){
+      return null;
+    }
     return (
       <div>
-        <p>{`Standart deviation of ${stocksList[`${selectedStockID1}`].stocksymbol} - ${stdev1}`}</p>
-        <p>{`Standart deviation of ${stocksList[`${selectedStockID2}`].stocksymbol} - ${stdev2}`}</p>
-        <p>{`Correlation between datasets ${corr}`}</p>
+        <p>{`Standart deviation of ${stocksList[`${selectedStockID1}`].stocksymbol} ${stdev1.toFixed(5)}`}</p>
+        <p>{`Standart deviation of ${stocksList[`${selectedStockID2}`].stocksymbol} ${stdev2.toFixed(5)}`}</p>
+        <p>{`Correlation between datasets ${corr.toFixed(5)}`}</p>
       </div>
     );
   }
 
+  public returnTable(tableData: any){
+    const { showTable } = this.state;
+    if(!showTable){
+      return null;
+    }
+
+    const columns = [{
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+    }, {
+      title: 'Close',
+      dataIndex: 'close',
+      key: 'close',
+    }, {
+      title: 'Change',
+      dataIndex: 'change',
+      key: 'change',
+    }];
+
+    const dataSource = tableData.data.map((row, index) => {
+      console.log(index, row);
+      const change: string = index === 0 ? `${0}%` : `${((row.close - tableData.data[index-1].close) / tableData.data[index-1].close * 100).toFixed(3)}%`;
+      return {
+        key: index,
+        date: row.date,
+        close: row.close,
+        change,
+      };
+    });
+
+    return (
+      <div style={{margin: '20px', width: '350px'}}>
+        <b>{tableData.data[0].stocksymbol}</b>
+        <Table dataSource={dataSource} columns={columns} />
+      </div>);
+  }
+
   public render() {
-    console.log(this.state);
+    const { stocksList, stock1SelectionOptions, stock2SelectionOptions, loading, stockTable1Data, stockTable2Data} = this.state;
     return (
       <div className="App2">
         <header className="App-header2">
@@ -137,57 +205,61 @@ class App extends React.Component<{}, IState> {
           <h1 style={{color: 'white'}} className="App-title">Welcome to Market Data Application</h1>
         </header>
         <div className="App-intro2">
-        <div style={{width: '50%'}}>
-          <div style={{marginBottom: '10px'}}>
-            <Upload {...this.uploadProps(this)}>
-              <Button>
-                <Icon type="upload" /> Click to Upload
-              </Button>
-            </Upload>
+          <div style={{width: '50%'}}>
+            <div style={{marginBottom: '10px'}}>
+              <Upload {...this.uploadProps(this)}>
+                <Button>
+                  <Icon type="upload" /> Click to Upload
+                </Button>
+              </Upload>
+            </div>
+            <div>
+            <Select
+              showSearch
+              style={{ width: 200, margin: 5}}
+              placeholder="Select a stock symbol"
+              optionFilterProp="children"
+              onChange={(value: any) => {
+                const copyOptions = JSON.parse(JSON.stringify(stocksList));
+                delete copyOptions[`${value}`];
+                this.setState({selectedStockID1: value, stock2SelectionOptions: copyOptions});
+              }}
+              onFocus={() => null}
+              onBlur={() => null}
+              // filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+            >
+              {this.returnSelectionOptions(stock1SelectionOptions)}
+            </Select>
+            <Select
+              showSearch
+              style={{ width: 200, margin: 5}}
+              placeholder="Select a stock symbol"
+              optionFilterProp="children"
+              onChange={(value: any) => {
+                const copyOptions = JSON.parse(JSON.stringify(stocksList));
+                delete copyOptions[`${value}`];
+                this.setState({selectedStockID2: value, stock1SelectionOptions: copyOptions});
+              }}
+              onFocus={() => null}
+              onBlur={() => null}
+              // filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+            >
+              {this.returnSelectionOptions(stock2SelectionOptions)}
+            </Select>
+            </div>
+            <Button type="primary" style={{margin: 10}} loading={loading} onClick={() => {
+              this.onClickCalculate();
+            }}>
+              Calculate Statistics
+            </Button>
+            {this.returnStatistics()}
+            <div style={{display: 'flex'}}>
+              {this.returnTable(stockTable1Data)}
+              {this.returnTable(stockTable2Data)}
+            </div>
           </div>
           <div>
-          <Select
-            showSearch
-            style={{ width: 200, margin: 5}}
-            placeholder="Select a stock symbol"
-            optionFilterProp="children"
-            onChange={(value: any) => {
-              const copyOptions = JSON.parse(JSON.stringify(this.state.stocksList));
-              delete copyOptions[`${value}`];
-              this.setState({selectedStockID1: value, stock2SelectionOptions: copyOptions});
-            }}
-            onFocus={() => null}
-            onBlur={() => null}
-            // filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-          >
-            {this.returnSelectionOptions(this.state.stock1SelectionOptions)}
-          </Select>
-          <Select
-            showSearch
-            style={{ width: 200, margin: 5}}
-            placeholder="Select a stock symbol"
-            optionFilterProp="children"
-            onChange={(value: any) => {
-              const copyOptions = JSON.parse(JSON.stringify(this.state.stocksList));
-              delete copyOptions[`${value}`];
-              this.setState({selectedStockID2: value, stock1SelectionOptions: copyOptions});
-            }}
-            onFocus={() => null}
-            onBlur={() => null}
-            // filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-          >
-            {this.returnSelectionOptions(this.state.stock2SelectionOptions)}
-          </Select>
           </div>
-          <Button type="primary" style={{margin: 10}} loading={this.state.loading} onClick={() => {
-            this.onClickCalculate();
-          }}>
-            Calculate Statistics
-          </Button>
-          {
-            this.state.showStatistics === true ? this.returnStatistics() : null
-          }
-        </div>
         </div>
       </div>
     );

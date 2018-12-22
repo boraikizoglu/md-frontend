@@ -41,4 +41,26 @@ export default class NetworkSingleton {
         });
   }
 
+  static stock(stock_symbol, table_id,
+    success = (res: any) => {console.log(res)},
+    failure = (err: any) => {console.log(err)}
+  ){
+        axios.get(`${this.MAIN_URL}/stock`, {
+          headers: {
+          "Content-Type": 'application/x-www-form-urlencoded',
+          stock_symbol,
+          table_id,
+        }})
+        .then((res: any) => {
+          if(res.data.err){
+            failure(res);
+          }else {
+            success(res.data);
+          }
+        })
+        .catch((err: {response: any}) => {
+          failure(err.response);
+        });
+  }
+
 }
