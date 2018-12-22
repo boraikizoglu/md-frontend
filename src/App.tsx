@@ -81,8 +81,9 @@ class App extends React.Component<{}, IState> {
           // console.log(info.file, info.fileList);
         }
         if (info.file.status === 'done') {
-          thisComponent.updateStockList();
-          thisComponent.updateStockList();
+          setTimeout(() => {
+            thisComponent.updateStockList();
+          }, 300);
           message.success(`${info.file.name} file uploaded successfully`);
         } else if (info.file.status === 'error') {
           message.error(`${info.file.name} file upload failed.`);
@@ -206,6 +207,8 @@ class App extends React.Component<{}, IState> {
         </header>
         <div className="App-intro2">
           <div style={{width: '50%'}}>
+            <p> You can upload any stock dataset which is downloaded from https://finance.yahoo.com </p>
+            <p> Dataset should contain Date|Open|High|Low|Close|Adj|Close|Volume columns</p>
             <div style={{marginBottom: '10px'}}>
               <Upload {...this.uploadProps(this)}>
                 <Button>
@@ -213,10 +216,11 @@ class App extends React.Component<{}, IState> {
                 </Button>
               </Upload>
             </div>
+            <div style={{marginTop: 20, marginBottom: 5}}> Please select two datasets to calculate statistics and show tables</div>
             <div>
             <Select
               showSearch
-              style={{ width: 200, margin: 5}}
+              style={{ width: 200, margin: 3}}
               placeholder="Select a stock symbol"
               optionFilterProp="children"
               onChange={(value: any) => {
@@ -232,7 +236,7 @@ class App extends React.Component<{}, IState> {
             </Select>
             <Select
               showSearch
-              style={{ width: 200, margin: 5}}
+              style={{ width: 200, margin: 3}}
               placeholder="Select a stock symbol"
               optionFilterProp="children"
               onChange={(value: any) => {
@@ -247,7 +251,7 @@ class App extends React.Component<{}, IState> {
               {this.returnSelectionOptions(stock2SelectionOptions)}
             </Select>
             </div>
-            <Button type="primary" style={{margin: 10}} loading={loading} onClick={() => {
+            <Button type="primary" style={{margin: 7}} loading={loading} onClick={() => {
               this.onClickCalculate();
             }}>
               Calculate Statistics
