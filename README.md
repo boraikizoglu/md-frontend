@@ -2,7 +2,7 @@ Install packages with
 `yarn install`
 
 Run Development server
-`yarn start`
+`yarn run dev`
 
 Run tests
 `yarn test`
