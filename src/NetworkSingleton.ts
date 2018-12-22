@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 export default class NetworkSingleton {
-  static MAIN_URL = 'http://localhost:3002';
+  static MAIN_URL = 'https://marketdata-backend.herokuapp.com';
 
   static stockList(
     success = (res: any) => {console.log(res)},
